@@ -1,0 +1,19 @@
+sudo aptitude install vsftpd
+cd /etc
+sudo nano vsftpd.conf
+anonymous_enable = NO
+uncomment => (local_enable)
+save file
+sudo /etc/init.d/vsftpd restart
+ftp localhost 
+ftp>ls
+exit
+sudo nano vsftpd.conf
+uncomment => (write_enable)
+save file
+sudo /etc/init.d/vsftpd restart
+انشاء ملف : 
+touch file_example in /tmp
+ftp localhost
+put file_example
+get file_example
