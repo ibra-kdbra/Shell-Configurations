@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# sokdr
+# ibra-kdbra
 #
 tput clear
 trap ctrl_c INT
