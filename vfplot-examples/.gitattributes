@@ -1,0 +1,9 @@
+*.gfs filter=lfs diff=lfs merge=lfs -text
+*.grd filter=lfs diff=lfs merge=lfs -text
+*.csv filter=lfs diff=lfs merge=lfs text
+*.eps filter=lfs diff=lfs merge=lfs text
+*.inc filter=lfs diff=lfs merge=lfs text
+*.pdf filter=lfs diff=lfs merge=lfs -text
+*.png filter=lfs diff=lfs merge=lfs -text
+*.geojson gitlab-language=json
+bvkp/vfplot.inc filter=lfs diff=lfs merge=lfs -text
