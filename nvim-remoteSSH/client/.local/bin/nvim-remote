@@ -1,0 +1,2 @@
+#!/bin/sh
+nvim --remote-ui --server /tmp/nvim.socket
