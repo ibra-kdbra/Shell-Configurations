@@ -1,4 +1,5 @@
-vfplot-examples
+# vfplot-examples
+
 ---------------
 
 Example plots for the [vfplot homepage][1].  Generating these plots
