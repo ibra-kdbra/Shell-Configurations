@@ -21,7 +21,7 @@ ip netns e $local_NS_name bash tunnel_router.sh \
     
 
 # Remove old tun and route
-info_log_await "Romoving old ssh tun/tap dev and route..."
+info_log_await "Removing old ssh tun/tap dev and route..."
 
 if [ -n "$remote_IP" ]; then
   echo pkill -9 -f "ssh.*\-w.*$remote_IP"
