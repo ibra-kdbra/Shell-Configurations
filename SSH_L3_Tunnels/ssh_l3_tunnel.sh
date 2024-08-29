@@ -36,21 +36,21 @@ pkill -9 -f "ssh.*\-w$SSH_TUN_DEV_ID+:[0-9]+.*" 2>/dev/null || true
 
 # Wait for the ${SSH_TUN_DEV} device to be created
 while true; do
-    echo "ip link show"
-    ip link show
-    pkill -9 -f "ssh.*\-w[0-9]+:$REMOTE_AVAILABLE_TUN_DEV_ID.*$REMOTE_IP" 2>/dev/null || true
-        pgrep -f "ssh.*-w[0-9]+:[0-9]+.*$REMOTE_IP" | 
-        while read -r pid; do
-            # Get the command line for the process
-            cmdline=$(cat /proc/$pid/cmdline)
+    # echo "ip link show"
+    # ip link show
+    # pkill -9 -f "ssh.*\-w[0-9]+:$REMOTE_AVAILABLE_TUN_DEV_ID.*$REMOTE_IP" 2>/dev/null || true
+    #     pgrep -f "ssh.*-w[0-9]+:[0-9]+.*$REMOTE_IP" | 
+    #     while read -r pid; do
+    #         # Get the command line for the process
+    #         cmdline=$(cat /proc/$pid/cmdline)
             
-            # Check if it matches the exclusion pattern
-            if [[ ! $cmdline =~ ssh.*-w[0-9]+:$REMOTE_AVAILABLE_TUN_DEV_ID.*$remote_IP ]]; then
-                # Kill the process if it doesn't match the exclusion pattern
-                kill -9 $pid
-            fi
-        done
-    echo "killed."
+    #         # Check if it matches the exclusion pattern
+    #         if [[ ! $cmdline =~ ssh.*-w[0-9]+:$REMOTE_AVAILABLE_TUN_DEV_ID.*$remote_IP ]]; then
+    #             # Kill the process if it doesn't match the exclusion pattern
+    #             kill -9 $pid
+    #         fi
+    #     done
+    # echo "killed."
     autossh -M 0 -f -N -o "ServerAliveInterval=10" \
         -o "ServerAliveCountMax=1" \
         -o "StrictHostKeyChecking=no" \
