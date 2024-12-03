@@ -1,5 +1,0 @@
-#!/bin/sh
-HOSTALIAS=${1:-myremote.server}
-systemctl status --user nvim-remote-ssh@${HOSTALIAS}.service || \
-    systemctl start --user nvim-remote-ssh@${HOSTALIAS}.service && \
-    systemctl status --user nvim-remote-ssh@${HOSTALIAS}.service
