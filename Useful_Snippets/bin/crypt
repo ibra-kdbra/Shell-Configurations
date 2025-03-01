@@ -1,0 +1,84 @@
+#!/bin/sh
+# encrypt and decrypt files with openssl
+#
+#------------------------------------------------
+
+
+die() {
+    >&2 printf '%s\n' "$*"
+    exit 1
+}
+
+usage() {
+>&2 cat <<EOF
+${0##*/} - encrypt and decrypt files with openssl
+
+Usage:
+---------
+${0##*/} file                encrypt a file
+${0##*/} -d file.crypt       decrypt a file
+EOF
+    exit 1
+}
+
+isfile() {
+    [ -f "$1" ] || usage
+}
+
+# for random filename
+get_entropy() {
+    LC_ALL=C \
+    tr -dc -- A-Z-a-z-0-9 < /dev/urandom 2>/dev/null | \
+    dd ibs=1 obs=1 count=8 2>/dev/null | \
+    sed 's/\-//g' 2>/dev/null || printf '%s\n' $$
+}
+
+encrypt() {
+    openssl \
+        enc \
+        -aes-256-cbc \
+        -a \
+        -salt \
+        -pbkdf2 \
+        -in "$1"
+}
+
+decrypt() {
+    openssl \
+        enc \
+        -aes-256-cbc \
+        -d \
+        -a \
+        -salt \
+        -pbkdf2 \
+        -in "$1"
+}
+
+main() {
+    case ${1#-} in
+        h|-help)
+            usage
+            ;;
+        d)
+            shift
+            case ${1#-} in
+                i)
+                    shift
+                    isfile "$1" || usage
+                    tmp=/tmp/$$-$(get_entropy).decrypt
+                    decrypt "$1" > "$tmp" || die "couldn't decrypt to '$tmp'"
+                    mv -f -- "$tmp" "${1%.crypt}" || die "couldn't name '$tmp' to '${1%.crypt}'"
+                    rm -f -- "$1"
+                    ;;
+                *)
+                    isfile "$1" || usage
+                    decrypt "$1"
+            esac
+            ;;
+        *)
+            isfile "$1" || usage
+            encrypt "$1" || die "Failed to encrypt '$1'"
+    esac
+}
+
+main "$@"
