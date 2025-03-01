@@ -1,0 +1,5 @@
+#!/bin/sh
+# convert piped text to uppercase
+#
+
+tr '[:lower:]' '[:upper:]'
