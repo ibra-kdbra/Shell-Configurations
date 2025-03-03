@@ -1,0 +1,48 @@
+#!/bin/sh
+# open and edit a file from given locations with dmenu
+#
+# shellcheck disable=2086
+#
+
+# -*-*-*-*-*- settings -*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
+folders=\
+"""
+${HOME}/.local/dedit_bookmarks
+${XDG_DOCUMENTS_DIR}
+${XDG_DOCUMENTS_DIR}/notes
+${HOME}/src/bin/bin
+${HOME}/src/shit/bin
+${HOME}/src/dots/Gentoo/notes/pkgs
+$(find ~/src/dots -maxdepth 2 -type d ! -path '*/.git*')
+"""
+#####$(printf '%s\n' ${HOME}/bin/*/)
+# -*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
+
+sel=\
+$(\
+    for f in $folders ; do
+        find -L "$f" \
+            -mindepth 1 \
+            -maxdepth 1 \
+            -type f \
+            ! -name "*/.git*" 2>/dev/null
+    done | sed 's/.*\///g' | sort -u | menu --wide -p 'Edit:'\
+)
+
+[ "$sel" ] || exit 1
+
+for f in $folders ; do
+    if [ -f "$f/$sel" ] ; then
+        # printf 'opening: %s/%s' "$f" "$sel"
+        if [ "$PLUMBER" ] ; then
+            exec $PLUMBER -- "$f/$sel"
+        else
+            if uname -a | grep -i asahi >/dev/null ; then
+                exec asahi-kitty --detach ${EDITOR:-vi} -- "$f/$sel"
+            else
+                exec kitty --detach ${EDITOR:-vi} -- "$f/$sel"
+            fi
+            # exec st -e ${EDITOR:-vi} -- "$f/$sel"
+        fi
+    fi
+done
