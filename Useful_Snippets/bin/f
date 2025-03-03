@@ -1,0 +1,70 @@
+#!/bin/sh
+# f - a tiny posix file searcher
+#
+# "find for normal humans"
+#
+# -*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
+
+usage() {
+>&2 cat <<"EOF"
+f - a tiny posix file searcher
+===============================================
+Usage: f <f/d> <dir> search terms
+
+[-f]    search for a file
+[-d]    search for a directory
+
+Examples:
+===============================================
+1. Search for a file named "foo.txt" in $PWD
+$ f foo.txt
+
+2. Search for a directory named "bar.d" in /etc
+$ f -d /etc bar.d
+EOF
+    exit 1
+}
+
+while [ "$1" ] ; do
+    case ${1#-} in
+        h)
+            usage
+            ;;
+        f|d)
+            case $1 in
+                f|d)
+                    ;;
+                *)
+                    usage
+            esac
+            t="-type $2"
+            shift 1
+            ;;
+        *)
+            case $# in
+                1)
+                    # if only given one term, it must be a search term
+                    # and the dir to search in is assumed to be $PWD
+                    p=.
+                    ;;
+                2)
+                    if [ -d "$1" ] ; then
+                        p=$1
+                        shift
+                    else
+                        usage
+                    fi
+                    ;;
+                *)
+                    # we should never have zero or three arguments here
+                    usage
+            esac
+            break
+    esac
+done
+
+# check if we still have arguments to search for
+[ "$1" ] || usage
+
+# shellcheck disable=2086
+exec find -L "$p" ! -path "$p" $t -iname "*${*}*" -maxdepth 10 2>/dev/null
