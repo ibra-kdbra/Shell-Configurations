@@ -1,7 +1,4 @@
 #!/bin/sh
-#
-# http://github.com/mitchweaver
-#
 # "du for humans"
 #
 # note: optinally add -L to follow links
