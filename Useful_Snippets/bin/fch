@@ -1,0 +1,376 @@
+#!/usr/bin/env bash
+#    ████         ██     
+#   ░██░         ░██     
+#  ██████  █████ ░██     
+# ░░░██░  ██░░░██░██████ 
+#   ░██  ░██  ░░ ░██░░░██
+#   ░██  ░██   ██░██  ░██
+#   ░██  ░░█████ ░██  ░██
+#   ░░    ░░░░░  ░░   ░░ 
+#
+# yet another fetch script
+#
+# Supports Linux and OpenBSD
+#
+# * Work in progress *
+#
+# -*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
+
+# openbsd compat
+if ! command -v seq >/dev/null ; then
+    seq() {
+        jot "$@"
+    }
+fi
+
+# shellcheck disable=2030,2034
+pr_space() {
+    df -h 2>/dev/null | \
+    while read -r drive size used _ perc mountpoint _ ; do
+        # only print line if drive is a physical device
+        case ${drive##*/} in
+            sd*|nvme*|rpool/*/root)
+                case $mountpoint in
+                    */boot|*/efi)
+                        # ignore
+                        ;;
+                    *)
+                        printf "│   %s/%s " "$used" "$size" #"$perc"
+                        for i in $(seq $((length - ${#used} - ${#size} - 1)) ) ; do
+                            printf ' '
+                        done
+                        printf ' │\n'
+                esac
+        esac
+    done
+}
+
+# idea to get terminal font
+# get_font() {
+#     font=$(strings <$(which st) | grep 'pixelsize=')
+#     printf '%s\n' "${font%%:*}"
+# }
+
+mem() {
+    case $(uname) in
+        OpenBSD)
+# shellcheck disable=2034
+read -r _ _ real _ _ free _ cache _ swap <<EOF
+$(top -n | grep Memory)
+EOF
+
+            # real is displayed as "real"/"real+cache"
+            # we just want to output "real", dont care about
+            # amount used as cached
+            real=${real%/*}
+            used=${real%M}
+
+            # reverse goes for swap
+            swap=${swap#*/}
+
+            case $free in
+                *M)
+                    free=${free%M}
+                    ;;
+                *G)
+                    free=${free%G}000
+            esac
+
+            total=$(( used + free + ${cache%M} + ${swap%M} ))
+
+            # convert back to bytes for human to work below
+            used=$(( used * 1000 ))
+            total=$(( total * 1000 ))
+            ;;
+        Linux)
+            set -- $(free | grep Mem)
+            total=$2
+            used=$3
+            cache=$6
+
+            printf '%s/%s\n' \
+            "$(printf '%s\n' "$((used * 1024))"  | human)" \
+            "$(printf '%s\n' "$(((total + cache) * 1024))" | human)"
+esac
+
+}
+
+get_temp() {
+    case $(uname) in
+        OpenBSD)
+            tmp=$(sysctl -n hw.sensors.cpu0.temp0)
+            printf '%s°C\n' "${tmp%.*}"
+            ;;
+        Linux)
+            case $(model) in
+                # apple m1 don't have Core as their sensors
+                # so we cant use the temp script
+                *Apple*M1*)
+                    read -r tmp </sys/class/thermal/thermal_zone0/temp
+                    printf '%s°C\n' "${tmp%???}"
+                    ;;
+                *)
+                    if command -v temp >/dev/null ; then
+                        temp
+                    else
+                        read -r tmp </sys/class/thermal/thermal_zone0/temp
+                        printf '%s°C\n' "${tmp%???}"
+                    fi
+            esac
+    esac
+}
+
+model() {
+    case $(uname) in
+        OpenBSD)
+            m=$(sysctl -n hw.version)
+            ;;
+        Linux)
+            if [ -f /sys/firmware/devicetree/base/model ] ; then
+                read -r m < /sys/firmware/devicetree/base/model
+            elif [ -f /sys/devices/virtual/dmi/id/product_name ] ; then
+                read -r m </sys/devices/virtual/dmi/id/product_family
+            fi
+    esac
+    case $m in
+        *'To be filled by O.E.M.'*|*'Default string'*)
+            m=Desktop
+    esac
+    printf '%s\n' "$m"
+}
+
+os() {
+      if command -v pkg_add    >/dev/null ; then os=OpenBSD
+    elif command -v pkgin      >/dev/null ; then os=NetBSD
+    elif command -v apk        >/dev/null ; then os=Alpine
+    elif command -v crux       >/dev/null ; then os=CRUX
+    elif command -v xbps-query >/dev/null ; then os=Void
+    elif command -v ubuntu-bug >/dev/null ; then os=Ubuntu
+    elif command -v apt-get    >/dev/null ; then os=Debian
+    elif command -v emerge     >/dev/null ; then os=Gentoo
+    elif command -v dnf        >/dev/null ; then os=Fedora ; fi
+    kern=$(uname -r | sed 's/-.*//')
+    # kern=${kern%%-*}
+    printf '%s %s\n' "$os" "$kern"
+}
+
+pr_line() {
+    buf=$1
+    # SC: "i is unused"
+    # shellcheck disable=2034
+    for i in r i c i n g $(seq "$3") ; do
+        buf="$buf─"
+    done
+    printf '%s\n' "$buf$2"
+}
+
+pr_host() {
+    h=$(hostname)
+    host=$USER@$h
+    printf '│   %s' "$host"
+
+    # fix this mess later, for now it works
+    #
+    # SC: "i is unused"
+    # shellcheck disable=2034
+    for i in _ _ $(seq $(($1 - ${#host}))) ; do
+        printf ' '
+    done
+
+    printf '%s\n' '│'
+}
+
+pr_str() {
+    # print emoji
+    printf '│ %s  ' "$1"
+    printf "%s" "$2"
+
+    # print str
+    # print spaces to fit $length
+    space_needed=$(( length - ${#2} + 2 ))
+
+    # This symbol counts as "2" chars...
+    # Bizarre. Look into why later.
+    case $2 in
+        *''*)
+            space_needed=$((space_needed + 2))
+    esac
+
+    # shellcheck disable=2034
+    for i in $(seq $space_needed) ; do
+        printf ' '
+    done
+
+    # close and newline
+    printf '│\n'
+}
+
+get_length() {
+    host=$(hostname)
+    host_len=$((5 + ${#USER} + 1 + ${#host}))
+    if [ ${#model} -ge $host_len ] ; then
+        echo ${#model}
+    else
+        echo $host_len
+    fi
+}
+
+get_packages() {
+    case $(os) in
+        Gentoo*)
+            qlist -I | wc -l
+            ;;
+        OpenBSD*)
+            pkg_info -l | wc -l
+            ;;
+        Fedora*)
+            dnf list installed 2>/dev/null | wc -l
+    esac
+}
+
+get_wm() {
+    for i in i3 dwm openbox fvwm icewm xfwm fluxbox kwin \
+        budgie pantheon xmonad Hyprland hyprland sway river gnome ; do
+        if pgrep $i >/dev/null ; then
+            echo $i
+            return
+        fi
+    done
+
+    echo "unknown"
+}
+
+get_loadavg() {
+    if [ -e /proc/loadavg ] ; then
+        read -r _load < /proc/loadavg
+        # shellcheck disable=2086
+        set -- $_load
+        printf "%s %s %s\n" "$1" "$2" "$3"
+    else
+        echo 'unknown'
+    fi
+}
+
+get_cpu() {
+    # intel for now
+    if [ -e /proc/cpuinfo ] ; then
+        cpu=$(grep 'model name' /proc/cpuinfo)
+        cpu=${cpu##*\) }
+        cpu=${cpu%% CPU \@*}
+
+        if [ ! "$cpu" ] ; then
+            case $(model) in
+                *"M1 Pro"*)
+                    cpu="Apple M1 Pro $(nproc)-Core"
+                    ;;
+                *"M1"*)
+                    cpu="Apple M1 $(nproc)-Core"
+                    ;;
+            esac
+        fi
+
+
+        printf '%s\n' "$cpu"
+    else
+        echo 'unknown'
+    fi
+}
+
+get_term() {
+    # shellcheck disable=2046
+    pid2name $(getppid $(getppid $$))
+}
+
+get_storage() {
+    if command -v zpool >/dev/null ; then
+        if zpool list | grep rpool >/dev/null ; then
+            zpool list | grep rpool | \
+            while read -r pool total used remaining _ _ frag perc_used _ ; do
+                printf '%s/%s (%s)\n' "$used" "$total" "$perc_used"
+            done
+        else
+            >&2 echo "can't find root zfs pool, is it not named rpool?"
+        fi
+    else
+        # >&2 echo "non-zfs not implemented yet"
+        :
+    fi
+}
+
+get_toolchain() {
+    gcc -dumpmachine
+}
+
+get_font() {
+    case $(get_term) in
+        kitty)
+            file="${XDG_CONFIG_HOME:-${HOME}/.config}/kitty/kitty.conf"
+            if [ -e "$file" ] ; then
+                font=$(grep -E '^font_family ' "$file")
+                font=${font#font_family }
+                # remove any nerd font mentions / cleanup
+                font=${font% Nerd Font*}
+                printf '%s\n' "$font"
+            else
+                echo "Unknown"
+            fi
+            ;;
+        *)
+            echo "Unknown Term"
+    esac
+}
+
+model=$(model)
+os=$(os)
+pkgs=$(get_packages)
+temp=$(get_temp)
+mem=$(mem)
+shell=${SHELL##*/}
+wm=$(get_wm)
+length=$(get_length)
+loadavg=$(get_loadavg)
+cpu=$(get_cpu)
+term=$(get_term)
+storage=$(get_storage)
+toolchain=$(get_toolchain)
+font=$(get_font)
+
+# print top borders
+pr_line ┌ ┐ "$length"
+pr_host     "$length"
+pr_line ├ ┤ "$length"
+
+case $(uname) in
+    OpenBSD)
+        emoji=🐡
+        ;;
+    *BSD)
+        emoji=
+        ;;
+    Linux)
+        case $(os) in
+            Gentoo*) emoji= ;;
+            Ubuntu*) emoji= ;;
+            Fedora*) emoji= ;;
+                  *) emoji=
+        esac
+esac
+
+# print content
+pr_str "󰹑" "$model"
+pr_str "$emoji" "$os"
+pr_str "" "$toolchain"
+pr_str "" "$pkgs"
+pr_str "" "$wm"
+pr_str "" "$term"
+pr_str "" "$shell"
+pr_str "" "$font"
+pr_str "" "$cpu"
+pr_str "" "$mem"
+pr_str "" "$storage"
+pr_str "" "$loadavg"
+pr_str "" "$temp"
+pr_space
+
+# print bottom borders
+pr_line └ ┘ "$length"
