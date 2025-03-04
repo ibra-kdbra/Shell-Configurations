@@ -1,0 +1,201 @@
+#!/bin/sh -e
+# git-gud: the most awesomest git wrapper
+#
+
+die() { >&2 printf '%s\n' "$*" ; exit 1 ; }
+noargs='No arguments.'
+confirm='Are you sure? (y\n) '
+abort='Aborting.'
+
+usage() {
+>&2 cat <<EOF
+$(grep "^#.*.$(basename "$0"):" "$0")
+
+Options: <optional> [mandatory]
+------------
+-a      add <files>
+-m      commit <files> [message]
+-o      push <remote> <branch>
+-u      add+commit+push [message]
+-p      pull changes <remote> <branch>
+-c      clone a repo [url]
+-gh     clone a github repo [user/repo]
+-un     list untracked files
+-d      git diff <remote> <branch>
+-l      show git log
+-b      list branches [branch]
+-k      checkout branch [branch]
+-bc     create branch [branch]
+-bd     delete a branch [branch]
+-rm     remove a file
+-mv     move a file
+-f      fetch <remote> <branch>
+-i      initialize a repository
+-r      add a remote
+-rv     list remotes
+-base   rebase [num]
+-bort   abort rebase in progress
+-reset  hard reset a repo [num]
+-cont   show repo contributors
+EOF
+exit 1
+}
+
+# -*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
+# we solved racism!
+#
+# returns whether a git repo is using "main" or "master"
+# needed due to pointless syntax change in 2020
+# -*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
+main_or_master() {
+    # shellcheck disable=1007
+    if PAGER= git branch | grep '\* master' >/dev/null ; then
+        echo master
+    elif PAGER= git branch | grep '\* main' >/dev/null ; then
+        echo main
+    fi
+}
+
+
+main() {
+    [ "$1" = -h ] && usage
+
+    case $1 in
+        -c|-gh|-cssh) ;;
+         *) git status >/dev/null 2>&1 || usage
+    esac
+
+    # shellcheck disable=1007
+    case $1 in
+        -a)     shift ; gadd               "$@" ;;
+        -m)     shift ; gmit               "$@" ;;
+        -o)     shift ; gout               "$@" ;;
+        -of)    shift ; gout --force       "$@" ;;
+        -u)     shift ; gup                "$@" ;;
+        -c)     shift ; git clone          "$@" ;;
+        -cssh)  shift ; sshclone           "$@" ;;
+        -p)     shift ; gpull              "$@" ;;
+        -pf)    shift ; gpull --force      "$@" ;;
+        -k)     shift ; git checkout       "$@" ;;
+        -b)     shift ; PAGER= git branch  "$@" ;;
+        -bc)    shift ; git branch         "$@" ;;
+        -bd)    shift ; branchdel          "$@" ;;
+        -d)     shift ; gdiff              "$@" ;;
+        -l)     shift ; git log --source   "$@" ;;
+        -f)     shift ; git fetch          "$@" ;;
+        -i)     shift ; git init           "$@" ;;
+        -mv)    shift ; git mv             "$@" ;;
+        -rm)    shift ; git rm             "$@" ;;
+        -r)     shift ; git remote add     "$@" ;;
+        -rv)    shift ; git remote -v      "$@" ;;
+        -base)  shift ; gbase              "$@" ;;
+        -bort)  shift ; git rebase --abort "$@" ;;
+        -reset) shift ; greset             "$@" ;;
+        -gh)    shift ; git clone http://github.com/"$*" ;;
+        -un)    git ls-files --others --exclude-standard ;;
+        -cont)  git log --format="%aN" | sort | \
+                uniq -c | sort -nr | sed 's|^[ ]*[^ ]*[ ]*||' ;;
+        *) git status -bs --show-stash
+    esac
+}
+
+# If no args, stage all files, (prompting for confirmation).
+# Otherwise stage all arguments.
+gadd() {
+    if [ "$1" ] ; then
+        git add "$@"
+    else
+        printf "%s\n%s\n%s" "$noargs" \
+            'About to stage all files...' \
+            "$confirm"
+        read -r ans
+        [ "$ans" = y ] || die $abort
+        git add -A
+    fi
+}
+
+# If one argument, commit with message
+# Otherwise, stage all arguments but last
+# as files and then use last arg as commit message
+# Ex: gud -m 'this is the commit message'
+# Ex: gud -m file1 file2 file3 'added 3 files'
+gmit() {
+    case $# in
+        0) die "$noargs" ;;
+        1) ;;
+        *) while [ $# -ne 1 ] ; do
+               git add "$1"
+               shift
+           done
+    esac
+    git commit -m "$1"
+}
+
+# If no arguments, push out to current branch.
+# Otherwise, push to given branch.
+gout() {
+    [ "$1" ] || set -- origin "$(git rev-parse --symbolic-full-name --abbrev-ref HEAD)"
+    [ "$2" ] || set -- origin "$1"
+    git push -u "$@"
+}
+
+# If no arguments, git pull.
+# Otherwise pull from given branch.
+gpull() {
+    [ "$1" ] || set -- origin "$(main_or_master)"
+    [ "$2" ] || set -- origin "$1"
+    git pull "$@"
+}
+
+# Interactively rebase current branch $1 number of commits.
+gbase() {
+    [ "$1" ] || die "$noargs"
+    count=$1
+    shift
+    git rebase -i HEAD~"$count" "$@"
+}
+
+# Stage all, commit all, push all to current branch.
+# Argument is the commit message.
+gup() { 
+    [ "$1" ] || die "$noargs"
+    printf '%s\n%s' \
+        'About to stage, commit, and push all changes.' \
+        "$confirm"
+    read -r ans
+    [ "$ans" = y ] || die $abort
+    git add -A && git commit -m "$*" && gout
+}
+
+# Perform a hard reset of current branch $1 number of commits.
+greset() {
+    [ "$1" ] || die "$noargs"
+    printf '%s\n%s' "About to 'git reset --hard $1'..." "$confirm"
+    read -r ans
+    [ "$ans" = y ] || die $abort
+    count=$1
+    shift
+    git reset --hard HEAD~"$count" "$@"
+}
+
+branchdel() {
+    printf '%s\n%s' "About to delete branch $1..." "$confirm"
+    read -r ans
+    [ "$ans" = y ] || die $abort
+    git push --delete origin "$1"
+}
+
+# If no arguments, diff repo against remote main.
+# Otherwise, diff repo against given remote branch.
+gdiff() {
+    [ "$1" ] || set -- origin "$(main_or_master)"
+    [ "$2" ] || set -- origin "$1"
+    git diff "$1"/"$2"
+}
+
+# because i can never remember the syntax for this
+sshclone() {
+    git clone "git@github.com:$1.git"
+}
+
+main "$@"
