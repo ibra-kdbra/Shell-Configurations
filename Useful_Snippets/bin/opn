@@ -1,0 +1,285 @@
+#!/bin/sh
+#   ___   _____    ___
+#  / __`\/\ '__`\/' _ `\
+# /\ \L\ \ \ \L\ /\ \/\ \
+# \ \____/\ \ ,__\ \_\ \_\
+#  \/___/  \ \ \/ \/_/\/_/
+#           \ \_\
+#            \/_/
+#
+# yet another plumber script
+#
+# -/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-
+
+usage() {
+head -n 11 "$0" | tail -n 7
+cat <<EOF
+============================
+[-c]       |  grab from clipboard
+[-m]       |  append '--no-video'
+[-v]       |  verbose
+[--menu]   |  load arguments via dmenu
+EOF
+exit 1
+}
+
+# -*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
+# Initial Opts
+# -*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
+# if no args provided, try to read from pipe
+if [ ! "$1" ] ; then
+    while read -r inp ; do
+        set -- "$@" "$inp"
+    done
+fi
+
+
+while [ "$1" ] ; do
+    case $1 in
+        --)
+            shift
+            break
+            ;;
+        -c)
+            # try clipboard, secondary, and primary
+            # preferring content in that order
+            for i in b s p ; do
+                set -- "$(xsel -o$i)"
+                [ "$1" ] && break
+            done
+            break
+            ;;
+        -h)
+            usage
+            ;;
+        -v)
+            shift
+            set -x
+            ;;
+        -m)
+            shift
+            MPV_OPTS="$MPV_OPTS --no-video"
+            ;;
+        --menu)
+            # shellcheck disable=2046
+            set -- $(: | ${MENU_PROG:-dmenu} -p 'Open:')
+            if [ "$1" ] && [ "${1#-}" != m ] ; then
+                exec "$0" "$@"
+            else
+                usage
+            fi
+            ;;
+        *)
+            break
+    esac
+done
+
+# -*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
+# Functions
+# -*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
+
+# fork process without any terminal output
+launch() {
+    nohup "$@" >/dev/null 2>&1 &
+}
+
+
+isfile() {
+    case $(printf '%s' "${1##*.}" | tr '[:upper:]' '[:lower:]') in
+        mp4|mov|webm|gif|mkv|avi)               isvideo     "$1" ;;
+        jpg|jpeg|png)                           isimage     "$@" ;;
+        mp3|flac|ogg|opus|wav)           launch play        "$@" ;;
+        pdf|epub)                               ispdf       "$@" ;;
+        docx|rtf|odt|ods|pptx|xlsx|csv)  launch libreoffice "$1" ;;
+        xcf)                             launch gimp        "$1" ;;
+        xoj)                             launch xournal     "$1" ;;
+        pcap)                            launch wireshark   "$1" ;;
+        svg)                             launch display     "$1" ;;
+        openshot|osp)                    launch openshot-qt "$1" ;;
+        link)
+            read -r url < "$1"
+            if [ "$url" ] ; then
+                isurl "$url"
+            fi
+            ;;
+        *)
+            case $(file -L "$1") in
+                *ASCII*|*Unicode*|*'shell script'*|*': empty'|*text)
+                    edit "$1"
+                    ;;
+                'broken symbolic link')
+                    >&2 printf "Broken symbolic link: %s\n" "$1"
+                    return 1
+                    ;;
+                *)
+                    >&2 printf 'Unable to determine file type: %s\n' "$1"
+                    return 1
+            esac
+    esac
+}
+
+isdir() {
+    if command -v eza >/dev/null ; then
+        eza -F --group-directories-first "$1"
+    else
+        ls -F "$1"
+    fi
+}
+
+isurl() {
+    # if it is a remote file, handle it via extension
+    case ${1##*.} in
+        zip|gz|bz2|xz|tgz|tar|rar|7z|pdf|epub) exec dl "$*" ;;
+        mp4|webm|gif|mkv|avi|flv|mov)          isvideo "$*" ;;
+        mp3|flac|wav|ogg|opus|aac)             play    "$*" ;;
+        jpg|png|jpeg|JPG|JPEG)                 isimage "$*"
+    esac
+
+    case $1 in
+        *tube*|*tu.be*|*invidio*|*vimeo*|*v.redd*|*hub.*|*//v.*.com/*)
+            isvideo "$@"
+            ;;
+        *bandcamp*|*soundcloud*)
+            launch firefox "$@"
+            ;;
+        *i.redd*|*//i.*.com/*)
+            isimage "$@"
+            ;;
+        ftp://*)
+            exec dl "$@"
+            ;;
+        *)
+            # exhausted all checks, it must just be
+            # a web page to be viewed in a browser
+            launch firefox "$@"
+    esac
+}
+
+edit() {
+    case ${EDITOR:-vi} in
+        # see if we are using a console editor
+        # if so, we may need to open a terminal
+        nvim|vim|vi|nano|micro)
+            ps -p $$ -o ppid= | {
+                read -r ppid
+                case $(ps -p "$ppid" -o command=) in
+                    "${SHELL##*/}"|*"/${SHELL##*/}")
+                        # if attached to a terminal emulator, just open the editor
+                        # shellcheck disable=2086
+                        exec ${EDITOR:-vi} -- "$*"
+                        ;;
+                    *)
+                        # if not called from a terminal, open one to edit
+                        # shellcheck disable=2086
+                        if command -v kitty >/dev/null ; then
+                            launch kitty --detach --single-instance ${EDITOR:-vi} -- "$*"
+                        elif command -v st >/dev/null ; then
+                            st -e ${EDITOR:-vi} -- "$*"
+                        else
+                            launch ${TERMINAL_PROG:-xterm} -e ${EDITOR:-vi} -- "$*"
+                        fi
+                esac
+            }
+        ;;
+        *)
+            # otherwise we have a gui editor, just launch it
+            # shellcheck disable=2086
+            launch ${EDITOR:-vi} -- "$*" &
+    esac
+}
+
+# mpv errors if its options are one string
+isvideo()  {
+    case ${1##*.} in
+        gif|webm)
+            MPV_OPTS="$MPV_OPTS --loop"
+    esac
+
+    # shellcheck disable=2086
+    # launch mpv $MPV_OPTS -- "$*"
+    # shellcheck disable=2086
+    launch celleloid --new-window $MPV_OPTS -- "$*"
+}
+
+isimage() {
+    launch mpvimg "$*"
+}
+
+ispdf() {
+    if command -v zathura >/dev/null ; then
+        launch zathura "$@"
+    elif command -v mupdf >/dev/null ; then
+        launch mupdf "$@"
+    fi
+}
+
+
+# -*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
+# End Functions
+# -*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
+
+if [ -f "$1" ] ; then
+    isfile "$@"
+elif [ -d "$1" ] ; then
+    isdir "$@"
+else
+    # remove any given white space
+    # note: trim can also be found at https://github.com/mitchweaver/bin
+    set -- "$(printf '%s\n' "$*" | trim)"
+
+    case $1 in
+        http://*|https://*|ftp://*|*.com|*.org|*.net)
+            isurl "$@"
+            ;;
+        # youtube, but shorthand to indicate only play audio
+        *'m:watch?v='*)
+            play https://youtube.com/"${1#m:}"
+            ;;
+        # youtube video
+        *'watch?v='*)
+            isvideo https://youtube.com/"$1"
+            ;;
+        # wikipedia
+        *'wiki/'*)
+            lanuch firefox "https://en.wikipedia.org/$1"
+            ;;
+        # subreddit
+        'r '*|/r/*|r/*)
+            set -- "${1#'r '}"
+            set -- "${1#r/}"
+            set -- "${1#/r/}"
+            launch firefox "https://old.reddit.com/r/$1"
+            ;;
+        # usps tracking number - either 22 digits long starting with '940',
+        #                            or 26 digits long starting with '920'
+        940*|920*)
+            case ${#1} in
+                22|26)
+                    launch firefox "https://tools.usps.com/go/TrackConfirmAction?qtc_tLabels1=$1"
+            esac
+            ;;
+        *bandcamp*|*soundcloud*)
+            play https://"$1"
+            ;;
+        imbd/*)
+            isurl https://imdb.com/"$1"
+            ;;
+        *.com/*|*.org/*)
+            launch firefox http://"$1"
+            ;;
+        # github - note: this rule is vague so it must be at the bottom
+        */*)
+            launch firefox "https://github.com/$1"
+            ;;
+        *)
+            case ${#1} in
+                # 40 chars, could be a sha256, check if git commit
+                40)
+                    isurl "https://github.com/search?q=$1&type=Commits"
+                    ;;
+                *)
+                    >&2 printf "Couldn't plumb %s\n" "$1"
+                    exit 1
+            esac
+    esac
+fi
