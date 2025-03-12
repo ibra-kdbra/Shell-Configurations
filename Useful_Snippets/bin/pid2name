@@ -1,0 +1,34 @@
+#!/bin/sh
+# print out corresponding process names from given pids
+#
+# silently ignores pids it can't find
+#
+
+usage() {
+    >&2 printf 'Usage: echo 0 | %s\n' "${0##*/}"
+    exit 1
+}
+
+getname() {
+    ps --no-headers -p "$1" -o cmd= 2>/dev/null | \
+    while read -r name _ ; do
+        # print only the process name, not full path
+        printf '%s\n' "${name##*/}"
+    done
+}
+
+if [ "$1" ] ; then
+    case $1 in
+        -h|--help)
+            usage
+    esac
+    # assume we're given pids as argument then
+    for pid in "$@" ; do
+        getname "$pid"
+    done
+else
+    # we are given piped input
+    while read -r pid ; do
+        getname "$pid"
+    done
+fi
