@@ -1,0 +1,51 @@
+#!/bin/sh
+# network interface helper for OpenBSD
+#
+
+usage() {
+    printf '%s\n' "${0##*/}: [-l list] [-u list up]"
+}
+
+list() {
+    ifconfig | while read -r line ; do
+        case $line in
+            # junk
+            ' '*|groups*|media*|status*|ieee*)
+                ;;
+            # virtual interfaces
+            lo*|pflog*|enc*)
+                ;;
+            *': '*)
+                printf '%s\n' "${line%%:*}"
+        esac
+    done
+}
+
+# lists interfaces that are up
+listup() {
+    list | while read -r int ; do
+        ifconfig "$int" | while read -r line ; do
+            case $line in
+                *'status: active'*)
+                    printf '%s\n' "$int"
+                    ;;
+            esac
+        done
+    done
+}
+
+main() {
+    case $1 in
+        -h)
+            usage
+            ;;
+        -u)
+            listup
+            ;;
+        *)
+            list
+
+    esac
+}
+
+main "$@"
