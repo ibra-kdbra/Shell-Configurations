@@ -1,0 +1,11 @@
+#!/bin/sh -ex
+# open shell in a temporary dir
+#
+
+dir=/tmp/$$.tmpsh
+
+mkdir -p "$dir"
+trap '/bin/rm -rf -- "${dir:-?}"' EXIT INT TERM HUP
+
+cd "$dir"
+(${SHELL:-/bin/sh})
