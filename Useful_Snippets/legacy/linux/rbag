@@ -1,0 +1,55 @@
+#!/bin/sh
+# easily get/set dpi for logitech mice on linux
+#
+
+die() {
+    >&2 printf '%s\n' "$*"
+    exit 1
+}
+
+usage() {
+    die "Usage: ${0##*/} [-g] [-s dpi]"
+}
+
+get_device() {
+    ratbagctl list >/dev/null || die 'No devices found.'
+    name=$(ratbagctl list)
+    printf '%s\n' "${name%%:*}"
+}
+
+main() {
+    if ! pgrep -f ratbagd >/dev/null ; then
+        >&2 echo "ratbagd isn't running. enter password to start it:"
+        if command -v systemctl > /dev/null ; then
+            sudo systemctl enable ratbagd
+            sudo systemctl start ratbagd
+            sudo systemctl daemon-reload
+            sudo systemctl reload dbus.service
+            sudo systemctl restart ratbagd
+        else
+            sudo rc-service ratbagd stop
+            sudo rc-service ratbagd start
+        fi
+    fi
+
+    case ${1#-} in
+        h)
+            usage
+            ;;
+        [0-9]*)
+            ratbagctl "$(get_device)" dpi set "$1"
+            ;;
+        s)
+            ratbagctl "$(get_device)" dpi set "${2:-?}"
+            ;;
+        g)
+            ratbagctl "$(get_device)" dpi get
+            ;;
+        *)
+            exit 1
+    esac
+    printf 'new dpi: %s' "$(ratbagctl "$(get_device)" dpi get)"
+    xset m 0 0
+}
+
+main "$@"
