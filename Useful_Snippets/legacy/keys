@@ -1,0 +1,17 @@
+#!/bin/sh
+# Toggles between 'us' and 'us-international' keyboard layouts.
+#
+
+set -- $(setxkbmap -query | grep variant)
+
+case $2 in
+    intl)
+		;;
+    *)
+		opts='-variant intl'
+		out=' International'
+esac
+
+setxkbmap -layout us $opts
+xmodmap ~/.xmodmaprc
+notify-send -t 1000 -u low "Keyboard Layout: US${out}"
