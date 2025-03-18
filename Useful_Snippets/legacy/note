@@ -1,0 +1,25 @@
+#!/bin/sh
+# n - simple notes
+#
+
+usage() {
+    >&2 printf '%s\n' "Usage: ${0##*/} [-f] [-c] [-d] [-v]"
+    exit 1
+}
+
+if [ "$1" = '-f' ] ; then
+    [ "$2" ] || usage
+    f=$2
+    [ -f "$2" ] || :>"$f"
+    shift 2
+else
+    f=${XDG_DOCUMENTS_DIR:-~/files}/notes.txt
+fi
+
+case $1 in
+    ''|-h) usage ;;
+       -c) tail -n 20 "$f" ;;
+       -d) sed -i '$d' "$f" ;;
+       -v) $EDITOR "$f" ;;
+        *) printf '%s\n' "$(date +%m-%d): $*" >>"$f"
+esac
