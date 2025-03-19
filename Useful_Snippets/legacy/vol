@@ -1,0 +1,101 @@
+#!/bin/sh
+# simple volume wrapper
+#
+# Linux   - supports pipewire, alsa, pulseaudio
+# OpenBSD - supported via sndioctl
+#
+# =/=/=/=/=/=/=/=/=/=/=/=/=/=/=/=/=/=/=/=/=/=/=/=
+
+usage() {
+    >&2 printf 'Usage: %s\n' "${0##*/} [i inc] [d dec] [s set] [m mute] [u unmute]"
+    exit
+}
+
+case ${1#-} in
+    h)
+        usage
+        ;;
+    *)
+        case $(uname) in
+            OpenBSD)
+                case ${1#-} in
+                    i)
+                        sndioctl -q output.mute=0
+                        sndioctl -q output.level=+"${VOL_ADJUSTMENT_AMOUNT:-0.03}"
+                        ;;
+                    d)
+                        sndioctl -q output.mute=0
+                        sndioctl -q output.level=-"${VOL_ADJUSTMENT_AMOUNT:-0.03}"
+                        ;;
+                    s)
+                        sndioctl -q output.mute=0
+                        sndioctl -q output.level=0."$2"
+                        ;;
+                    m)
+                        sndioctl -q output.mute=1
+                        ;;
+                    u)
+                        sndioctl -q output.mute=0
+                        ;;
+                    *)
+                        vol=$(sndioctl -n output.level)
+                        vol=${vol%?}
+                        vol=${vol#0.}
+                        vol=${vol#0}
+                        case $vol in
+                            1.00)
+                                vol=100
+                                ;;
+                            0)
+                                vol=0
+                        esac
+                        printf '%s\n' "$vol"
+                esac
+                ;;
+            Linux)
+                # use pulseaudio if available, note on fedora pacmd is a command but isnt used
+                if command -v pacmd >/dev/null && ! command -v dnf >/dev/null ; then
+                    case ${1#-} in
+                        i)
+                            pactl set-sink-mute 0 false
+                            pactl set-sink-volume @DEFAULT_SINK@ +3%
+                            ;;
+                        d)
+                            pactl set-sink-mute 0 false
+                            pactl set-sink-volume @DEFAULT_SINK@ -3%
+                            ;;
+                        s)
+                            pactl set-sink-mute 0 false
+                            pactl set-sink-volume @DEFAULT_SINK@ "$2"%
+                            ;;
+                        *)
+                            sink=$(pacmd list-sinks | awk '/index:/{i++} /* index:/{print i; exit}')
+                            pacmd list-sinks | awk '/^\svolume:/{i++} i=='"$sink"'{print $5; exit}'
+                    esac
+                elif command -v amixer >/dev/null ; then
+                    case ${1#-} in
+                        i)
+                            amixer --quiet set 'Master' unmute
+                            amixer --quiet set 'Master' 5%+
+                            ;;
+                        d)
+                            amixer --quiet set 'Master' unmute
+                            amixer --quiet set 'Master' 5%-
+                            ;;
+                        s)
+                            amixer --quiet set 'Master' unmute
+                            amixer --quiet set 'Master' "$2"%
+                            ;;
+                        *)
+                            vol=$(amixer sget 'Master' | grep '%' | head -n 1)
+                            vol="${vol%%]*}"
+                            vol="${vol##*[}"
+                            printf '%s\n' "$vol"
+                    esac
+                else
+                    >&2 echo "No pulseaudio pactl or alsa amixer detected."
+                    exit 1
+                fi
+        esac
+esac
+
