@@ -1,0 +1,140 @@
+#!/bin/sh
+# a tiny posix trash can
+#
+# assumes you also have "d", "rgen", and "human" from my bin in your $PATH
+#
+# ============================================================
+# ENVIRONMENT SETTINGS:
+# ============================================================
+# define objects greater than 4GB as being not trashable
+: "${TRASH_MAX_SIZE:="$((1024 * 1024 * 1024 * 4))"}"
+: "${TRASH_LOCATION:=${XDG_DATA_HOME:-${HOME}/.local}/share/Trash/files}"
+# ============================================================
+
+usage() {
+cat <<EOF
+${0##*/}: a tiny posix trash can
+
+Usage: ${0##*/} ./garbage
+
+[-r]    trash folder
+[-l]    list trash
+[-e]    empty trash
+EOF
+exit 1
+}
+
+msg() {
+    printf '[*] %s\n' "$*"
+}
+
+die() {
+    >&2 printf 'Error: %s\n' "$*"
+    exit 1
+}
+
+get_size() {
+    du -bd 0 "$1" | \
+    while read -r size _ ; do
+        echo "$size"
+    done
+}
+
+dumpster() {
+    # trim leading slash, if exists
+    file="${1%/}"
+    if [ -L "$file" ] ; then
+        printf 'Found symlink: "%s"  "%s"\n' "$file" "$(readlink "$file")"
+        if unlink "$file" ; then
+            msg "Unlinked: $file"
+        else
+            die "Failed to unlink: $file"
+        fi
+    elif [ -e "$file" ] ; then
+        if [ -d "$file" ] && [ ! "$RECURSIVE" ] ; then
+            die "\"$file\" is a folder, did you mean to use [-r]?"
+        fi
+        size="$(get_size "$file")"
+        if [ ! "$size" -gt "$TRASH_MAX_SIZE" ] ; then
+            if /bin/mv "$file" "$TRASH_LOCATION/${file##*/}-$(rgen 5).trashed" ; then
+                msg "Trashed: $file"
+            else
+                die "Failed to trash: $file"
+            fi
+        else
+            msg "Error: ${file##*/} is too big to trash"
+            printf 'Would you like to permanently delete it? (y/n): '
+            read -r ans
+            case $ans in
+                y|yes|Y|YES)
+                    if [ "$file" != / ] ; then
+                        /bin/rm -rfv -- "${file:-?}"
+                    fi
+                    exit $?
+                    ;;
+                *)
+                    die 'Understood. Not removing.'
+            esac
+        fi
+    else
+        die "Error: $file does not exist"
+    fi
+}
+
+take_out_the_trash() {
+    msg "Trash can: $(get_size "$TRASH_LOCATION" | human)"
+    >&2 printf '%s' 'Take out the trash? (y/n): '
+    read -r ans
+    if [ "$ans" = y ]  ; then
+        /bin/rm -rfv -- "${TRASH_LOCATION:-?}"/*
+        find "${TRASH_LOCATION:-?}" -name '.*' ! -name '.' ! -name '..' -exec /bin/rm -rfv -- "{}" \;
+        >&2 printf '%s\n%s\n' \
+            '-----------------------------' \
+            'Emptied.'
+    else
+        >&2 echo 'Cancel.'
+        exit 1
+    fi
+}
+
+main() {
+    [ "$1" ] || usage
+
+    for dep in d rgen human ; do
+        if ! command -v "$dep" >/dev/null ; then
+            die "Missing dependency: $dep"
+        fi
+    done
+
+    mkdir -p "$TRASH_LOCATION"
+
+    unset RECURSIVE
+    case $1 in
+        -r|-rf|-fr|r)
+            RECURSIVE=true
+            shift
+    esac
+
+    case "$1" in
+        -h|h)
+            usage
+            ;;
+        -l|l)
+            d "${TRASH_LOCATION}"
+            ;;
+        -e|e)
+            take_out_the_trash
+            ;;
+        *)
+            for garbage in "$@" ; do
+                # ignore mistaken -r,-v,-f gracefully
+                case $garbage in
+                    -r|-f|-rf|-rfv|-rvf|-fv|-rv)
+                        [ -e "$garbage" ] || continue
+                esac
+                dumpster "$garbage" || exit 1
+            done
+    esac
+}
+
+main "$@"
