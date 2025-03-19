@@ -1,0 +1,123 @@
+#!/bin/sh -e
+# ytdlq - a little queue to download youtube videos
+#
+# deps: youtube-dl, detox
+#
+
+# -*-*- config -*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-
+: "${YTDL_OPTS:='--prefer-ffmpeg  -o %(title)s.%(ext)s'}"
+: "${YTDLQ_DIR:=~/.ytdlq}"
+queue=$YTDLQ_DIR/queue
+working=$YTDLQ_DIR/working
+completed=$YTDLQ_DIR/completed
+downloading=$YTDLQ_DIR/downloading
+logs=$YTDLQ_DIR/logs
+# -*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
+
+usage() {
+>&2 cat <<EOF
+Usage:
+--------------------------------
+[-a]      add a video link
+[-m]      mass download
+[-d]      start daemon
+[-q]      stop daemon
+[-r]      retry failed downloads
+EOF
+exit 1
+}
+
+dl() {
+    mkdir -p "$completed" "$downloading" "$logs"
+    cd "$downloading"
+    log=$logs/$(youtube-dl \
+                -q -j --no-warnings \
+                --no-playlist \
+                --skip-download "$1" | \
+                jq -r '.title' | \
+                sed 's/\//_/g').log
+
+    # shellcheck disable=2086
+    youtube-dl $YTDL_OPTS \
+        -c -R 50 \
+        --geo-bypass \
+        --no-playlist \
+        --no-color \
+        --socket-timeout 20 \
+        --exec \
+            """
+            mv -f -- {} \"$completed\"/ ; \
+            detox \"$completed\"/{} ; \
+            rm -f -- \"$log\" ; \
+            notify-send \"YT: {} has finished downloading\" \
+            """ "$1" >"$log" 2>&1
+}
+
+start_daemon() {
+    mkdir -p "$YTDLQ_DIR"
+    touch "$queue" "$working"
+    printf '%s\n' $$ > "${XDG_CACHE_HOME:-${HOME}/.cache}/${0##*/}.pid"
+
+    while sleep 5 ; do
+        if [ -s "$queue" ] ; then
+            # sleep if no internet connection
+            while ! ping -q -L -c 1 -s 1 youtube.com >/dev/null ; do
+                sleep 30
+            done
+
+            read -r link <"$queue"
+            {
+                printf '%s\n' "$link" >> "$working"
+                dl "$link" || printf '%s\n' "$link" >>"$queue".rej
+                sed -i "/.*${link##*/}.*/d" "$working"
+            } &
+            sed -i '1d' "$queue"
+        fi
+    done
+}
+
+stop_daemon() {
+    if [ -f "${XDG_CACHE_HOME:-${HOME}/.cache}/${0##*/}.pid" ] ; then
+        read -r pid < "${XDG_CACHE_HOME:-${HOME}/.cache}/${0##*/}.pid"
+        kill -0 "$pid" && kill -9 "$pid"
+    fi
+}
+
+add() {
+    [ "$1" ] || usage
+    printf '%s\n' "$1" >>"$queue"
+}
+
+mass_add() {
+    tmp=/tmp/$$.${0##*/}
+    ${EDITOR:-vi} "$tmp"
+    if [ "$tmp" ] ; then
+        while read -r url ; do
+            add "$url"
+        done < "$tmp"
+        rm "$tmp"
+    fi
+}
+
+case ${1#-} in
+    a)
+        add "$2"
+        ;;
+    m|v)
+        mass_add
+        ;;
+    d)
+        start_daemon
+        ;;
+    q)
+        stop_daemon
+        ;;
+    r)
+        if [ -f "$queue".rej ] ; then
+            cat "$queue".rej >> "$queue"
+            rm "$queue".rej
+        fi
+        ;;
+    *)
+        usage
+esac
