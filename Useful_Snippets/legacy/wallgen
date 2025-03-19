@@ -1,0 +1,31 @@
+#!/bin/sh -e
+# generate a wallpaper with some static given a color #HEXHEX code
+# ========================================================================
+
+if [ -z "$1" ] ; then
+    if command -v color >/dev/null ; then
+        set -- "$(color)"
+    else
+        >&2 echo "No argument provided and no colorpicker installed. Exiting."
+        exit 1
+    fi
+fi
+
+WALLGEN_DIR="${XDG_CACHE_HOME:-~/.cache}/wallgen"
+mkdir -p "$WALLGEN_DIR"
+
+count=$(find "$WALLGEN_DIR" -maxdepth 1 -type f -name '*.jpg' | wc -l)
+file="$WALLGEN_DIR/wallgen-$count.jpg"
+
+convert -size 128x128 xc:"$*" \
+    -separate -seed 1000 \
+    -attenuate 0.13 \
+    +noise gaussian \
+    -combine -colorspace sRGB "$file"
+
+echo "Created: $file"
+printf "Set as background? (y/n):"
+read -r ans
+case $ans in
+    y) background -t "$file"
+esac
