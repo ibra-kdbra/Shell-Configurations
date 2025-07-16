@@ -1,5 +1,3 @@
-# ARGUMENT COMPLETER FUNCTIONS #################################################
-
 # APPX Package
 function Appx_PackageNameArgumentCompletion
 {
