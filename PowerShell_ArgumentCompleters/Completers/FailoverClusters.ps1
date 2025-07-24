@@ -1,4 +1,4 @@
-# ARGUMENT COMPLETER FUNCTIONS #################################################
+# ARGUMENT COMPLETER FUNCTIONS
 # Version 0.97
 
 #CLUSTER
