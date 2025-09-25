@@ -61,6 +61,3 @@ Run the scripts in numerical order for a complete setup, or execute individual s
 - Internet connection for downloading packages
 - Administrator (sudo) privileges
 
-## License
-
-See individual scripts and configurations for licensing information.
