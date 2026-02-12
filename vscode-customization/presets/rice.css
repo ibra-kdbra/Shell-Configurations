@@ -24,10 +24,6 @@
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5) !important;
 }
 
-.quick-input-widget .quick-input-list {
-  border-radius: 0 0 12px 12px;
-}
-
 /* ── Suggest / Autocomplete Widget ─────────────────────────────── */
 .editor-widget.suggest-widget {
   border-radius: 8px !important;
@@ -60,18 +56,10 @@
   border-radius: 6px;
 }
 
-.monaco-scrollable-element > .scrollbar.vertical > .slider {
-  min-width: 6px !important;
-}
-
 /* ── Tabs ──────────────────────────────────────────────────────── */
 .monaco-workbench .part.editor .title .tab {
   border-radius: 6px 6px 0 0;
   margin: 0 1px;
-}
-
-.editor-group-container .title .tabs-container {
-  padding: 2px 4px 0 4px;
 }
 
 /* ── Buttons ───────────────────────────────────────────────────── */
@@ -98,11 +86,6 @@
 
 .monaco-editor .peekview-widget .head {
   border-radius: 8px 8px 0 0;
-}
-
-/* ── Activity Bar Icon Rounding ────────────────────────────────── */
-.monaco-workbench .activitybar .action-item .action-label {
-  border-radius: 8px;
 }
 
 /* ── Panel Transparency ────────────────────────────────────────── */
@@ -137,13 +120,6 @@
 }
 
 .monaco-workbench .part.editor .title .tab.active {
-  outline: none !important;
-}
-
-.monaco-workbench
-  .quick-input-widget
-  .quick-input-list
-  .monaco-list-row.focused {
   outline: none !important;
 }
 
