@@ -1,0 +1,13 @@
+dbaeumer.vscode-eslint
+esbenp.prettier-vscode
+github.copilot
+github.copilot-chat
+eamodio.gitlens
+usernamehw.errorlens
+mutantdino.resourcemonitor
+bradlc.vscode-tailwindcss
+pkief.material-icon-theme
+pkief.material-product-icons
+drcika.apc-extension
+enkia.tokyo-night
+editorconfig.editorconfig
