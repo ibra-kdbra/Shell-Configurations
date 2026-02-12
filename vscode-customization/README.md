@@ -139,7 +139,8 @@ Enable semantic highlighting for smarter, context-aware colorization that goes b
 ### Ergonomic Layout
 
 - **Move Sidebar to Right:** `workbench.sideBar.location: "right"`. This prevents your code from "jumping" horizontally when you toggle the file explorer.
-- **Disable Minimap:** It’s a separate render process that eats RAM. Use **Sticky Scroll** instead to keep track of your location in the code.\* **Enable Breadcrumbs:** Essential for navigating large codebases—shows file path and symbol hierarchy at the top of the editor.
+- **Disable Minimap:** It’s a separate render process that eats RAM. Use **Sticky Scroll** instead to keep track of your location in the code.
+- **Enable Breadcrumbs:** Essential for navigating large codebases—shows file path and symbol hierarchy at the top of the editor.
 - **Hide Command Center:** Remove title bar clutter by disabling `window.commandCenter`—you already use `Ctrl+Shift+P`.
 - **Tab Indicators:** Enable `workbench.editor.highlightModifiedTabs` for instant visual feedback on unsaved files.
 - **Inlay Hints:** Use `"editor.inlayHints.enabled": "onUnlessPressed"` to see type information from LSPs without cluttering your view.
