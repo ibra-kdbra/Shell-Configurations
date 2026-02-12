@@ -4,7 +4,7 @@
     "command": "workbench.view.explorer",
   },
   {
-    "key": "ctrl+alt+t",
+    "key": "ctrl+alt+h",
     "command": "workbench.action.terminal.focus",
   },
   {
