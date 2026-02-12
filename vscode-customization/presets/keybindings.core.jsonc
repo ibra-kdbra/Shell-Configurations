@@ -1,0 +1,68 @@
+[
+  {
+    "key": "ctrl+alt+e",
+    "command": "workbench.view.explorer",
+  },
+  {
+    "key": "ctrl+alt+t",
+    "command": "workbench.action.terminal.focus",
+  },
+  {
+    "key": "ctrl+alt+m",
+    "command": "workbench.actions.view.problems",
+  },
+  {
+    "key": "ctrl+alt+s",
+    "command": "workbench.action.toggleSidebarVisibility",
+  },
+  {
+    "key": "ctrl+alt+r",
+    "command": "editor.action.rename",
+    "when": "editorHasRenameProvider && editorTextFocus && !editorReadonly",
+  },
+  {
+    "key": "ctrl+alt+f12",
+    "command": "editor.action.referenceSearch.trigger",
+    "when": "editorHasReferenceProvider && editorTextFocus",
+  },
+  {
+    "key": "ctrl+alt+v",
+    "command": "workbench.files.action.showActiveFileInExplorer",
+  },
+  {
+    "key": "ctrl+alt+enter",
+    "command": "workbench.action.toggleMaximizeEditorGroup",
+  },
+  {
+    "key": "ctrl+alt+\\",
+    "command": "workbench.action.splitEditorRight",
+  },
+  {
+    "key": "ctrl+alt+n",
+    "command": "workbench.action.terminal.new",
+  },
+  {
+    "key": "ctrl+alt+k",
+    "command": "workbench.action.terminal.kill",
+    "when": "terminalFocus",
+  },
+  {
+    "key": "ctrl+alt+b",
+    "command": "workbench.action.tasks.runTask",
+    "args": "build",
+  },
+  {
+    "key": "ctrl+alt+l",
+    "command": "workbench.action.tasks.runTask",
+    "args": "lint",
+  },
+  {
+    "key": "ctrl+alt+y",
+    "command": "workbench.action.tasks.runTask",
+    "args": "typecheck",
+  },
+  {
+    "key": "ctrl+alt+z",
+    "command": "workbench.action.toggleZenMode",
+  },
+]
