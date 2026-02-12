@@ -1,0 +1,182 @@
+/* ══════════════════════════════════════════════════════════════════
+   VS Code Rice — Tokyo Night Storm
+   Custom CSS reference for APC Customize UI++ (drcika.apc-extension)
+
+   This file is a standalone reference. The active CSS is injected
+   inline via apc.stylesheet in settings.json. To use this file
+   directly instead, add to your settings:
+
+     "apc.imports": ["${userHome}/.config/Code/User/rice.css"]
+
+  Palette:
+     bg-dark   #16161e    bg        #1a1b26    bg-hl     #292e42
+     fg        #c0caf5    fg-dark   #a9b1d6    comment   #565f89
+     dark3     #3b4261    dark5     #737aa2    blue      #7aa2f7
+     cyan      #7dcfff    blue0     #3d59a1    teal      #73daca
+     magenta   #bb9af7    green     #9ece6a    yellow    #e0af68
+     orange    #ff9e64    red       #f7768e
+   ══════════════════════════════════════════════════════════════════ */
+
+/* ── Command Palette / Quick Input ─────────────────────────────── */
+.quick-input-widget {
+  border-radius: 12px !important;
+  overflow: hidden;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5) !important;
+}
+
+.quick-input-widget .quick-input-list {
+  border-radius: 0 0 12px 12px;
+}
+
+/* ── Suggest / Autocomplete Widget ─────────────────────────────── */
+.editor-widget.suggest-widget {
+  border-radius: 8px !important;
+  overflow: hidden;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4) !important;
+}
+
+/* ── Hover / Documentation Widget ──────────────────────────────── */
+.monaco-editor .monaco-hover {
+  border-radius: 8px !important;
+  overflow: hidden;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4) !important;
+}
+
+/* ── Context Menus ─────────────────────────────────────────────── */
+.monaco-workbench .context-view .monaco-menu {
+  border-radius: 8px !important;
+  overflow: hidden;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4) !important;
+}
+
+/* ── Find & Replace Widget ─────────────────────────────────────── */
+.monaco-editor .find-widget {
+  border-radius: 0 0 8px 8px !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* ── Scrollbars ────────────────────────────────────────────────── */
+.monaco-scrollable-element > .scrollbar > .slider {
+  border-radius: 6px;
+}
+
+.monaco-scrollable-element > .scrollbar.vertical > .slider {
+  min-width: 6px !important;
+}
+
+/* ── Tabs ──────────────────────────────────────────────────────── */
+.monaco-workbench .part.editor .title .tab {
+  border-radius: 6px 6px 0 0;
+  margin: 0 1px;
+}
+
+.editor-group-container .title .tabs-container {
+  padding: 2px 4px 0 4px;
+}
+
+/* ── Buttons ───────────────────────────────────────────────────── */
+.monaco-workbench .monaco-button {
+  border-radius: 6px !important;
+}
+
+/* ── Input Fields ──────────────────────────────────────────────── */
+.monaco-inputbox {
+  border-radius: 6px !important;
+}
+
+/* ── Notifications ─────────────────────────────────────────────── */
+.monaco-workbench .notifications-list-container .notification-list-item {
+  border-radius: 8px;
+  margin: 2px;
+}
+
+/* ── Peek View ─────────────────────────────────────────────────── */
+.monaco-editor .peekview-widget {
+  border-radius: 8px !important;
+  overflow: hidden;
+}
+
+.monaco-editor .peekview-widget .head {
+  border-radius: 8px 8px 0 0;
+}
+
+/* ── Activity Bar Icon Rounding ────────────────────────────────── */
+.monaco-workbench .activitybar .action-item .action-label {
+  border-radius: 8px;
+}
+
+/* ── Panel Transparency ────────────────────────────────────────── */
+/* Requires compositor: Picom, Hyprland, KWin, or Mutter (Linux)   */
+/* macOS/Windows: handled natively via apc.electron settings        */
+
+.monaco-workbench .part.sidebar {
+  background-color: rgba(31, 35, 53, 0.92) !important;
+}
+
+.monaco-workbench .part.panel {
+  background-color: rgba(31, 35, 53, 0.92) !important;
+}
+
+.monaco-workbench .part.titlebar {
+  background-color: rgba(26, 27, 38, 0.95) !important;
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   AGGRESSIVE RICING
+   ══════════════════════════════════════════════════════════════════ */
+
+/* ── Kill Focus / Accessibility Borders ────────────────────────── */
+/* Removes the ugly grey outline box around focused elements        */
+.monaco-workbench *:focus {
+  outline: none !important;
+  outline-offset: 0 !important;
+}
+
+.monaco-workbench .monaco-list-row.focused {
+  outline: none !important;
+}
+
+.monaco-workbench .part.editor .title .tab.active {
+  outline: none !important;
+}
+
+.monaco-workbench
+  .quick-input-widget
+  .quick-input-list
+  .monaco-list-row.focused {
+  outline: none !important;
+}
+
+/* ── Panel Gaps — Floating Panel Look ──────────────────────────── */
+.monaco-workbench .part.sidebar {
+  margin: 4px 0 4px 4px;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.monaco-workbench .part.panel {
+  margin: 0 4px 4px 4px;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.monaco-workbench .part.editor {
+  margin: 4px;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+/* ── Rounded Status Bar ────────────────────────────────────────── */
+.monaco-workbench .part.statusbar {
+  border-radius: 8px 8px 0 0;
+  margin: 0 4px;
+}
+
+/* ── Even Thinner Scrollbars ───────────────────────────────────── */
+.monaco-scrollable-element > .scrollbar.vertical {
+  width: 6px !important;
+}
+
+.monaco-scrollable-element > .scrollbar.horizontal {
+  height: 6px !important;
+}
