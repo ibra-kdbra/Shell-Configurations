@@ -1,8 +1,12 @@
 #!/bin/sh
-# a tiny posix trash can
+# trash - a tiny posix trash can
 #
-# assumes you also have "d", "rgen", and "human" from my bin in your $PATH
+# A safe alternative to 'rm' that moves files to a trash location.
+# Requires: d, rgen, human (found in the same snippets collection)
 #
+# Usage: trash [-r] <file|dir>  # Trash a file or directory
+#        trash -l              # List trash contents
+#        trash -e              # Empty the trash
 # ============================================================
 # ENVIRONMENT SETTINGS:
 # ============================================================

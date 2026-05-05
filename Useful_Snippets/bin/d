@@ -1,7 +1,9 @@
 #!/bin/sh
-# "du for humans"
+# d - "du for humans"
 #
-# note: optinally add -L to follow links
+# Summarize disk usage for directories or files, sorted by size.
+#
+# Usage: d [-L links] <directory|file>
 #
 # -*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 
