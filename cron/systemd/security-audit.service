@@ -1,0 +1,6 @@
+[Unit]
+Description=Daily Security Audit
+
+[Service]
+Type=simple
+ExecStart=/home/ibra/Workspace/Personal/Shell-Configurations/cron/scripts/security_audit.sh

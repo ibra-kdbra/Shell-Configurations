@@ -1,0 +1,6 @@
+[Unit]
+Description=Pacman Mirror and Package Cache Maintenance
+
+[Service]
+Type=simple
+ExecStart=/home/ibra/Workspace/Personal/Shell-Configurations/cron/scripts/sys_maintenance.sh
