@@ -1,0 +1,6 @@
+[Unit]
+Description=AI/Dev Cache Cleanup
+
+[Service]
+Type=simple
+ExecStart=%h/.local/bin/dev_cleanup.sh
