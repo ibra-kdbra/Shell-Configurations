@@ -1,0 +1,6 @@
+[Unit]
+Description=Daily Projects Backup
+
+[Service]
+Type=simple
+ExecStart=%h/.local/bin/backup_projects.sh
