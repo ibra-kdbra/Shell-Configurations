@@ -1,8 +1,0 @@
-[Unit]
-Description=Pacman Mirror and Package Cache Maintenance
-Wants=network-online.target
-After=network-online.target
-
-[Service]
-Type=simple
-ExecStart=/home/ibra/Workspace/Personal/Shell-Configurations/cron/scripts/sys_maintenance.sh
