@@ -13,6 +13,21 @@ echo "--- Dev Cleanup: $(date) ---" >> "$LOG"
 # Clean HuggingFace Hub cache (older than 30 days)
 /usr/bin/find ~/.cache/huggingface/hub -type f -atime +30 -delete >> "$LOG" 2>&1
 
+# Clean uv cache (older than 30 days)
+if [ -d ~/.cache/uv ]; then
+    /usr/bin/find ~/.cache/uv -type f -atime +30 -delete >> "$LOG" 2>&1
+fi
+
+# Clean Go build cache (older than 30 days)
+if [ -d ~/.cache/go-build ]; then
+    /usr/bin/find ~/.cache/go-build -type f -atime +30 -delete >> "$LOG" 2>&1
+fi
+
+# Clean system thumbnails cache (older than 30 days)
+if [ -d ~/.cache/thumbnails ]; then
+    /usr/bin/find ~/.cache/thumbnails -type f -mtime +30 -delete >> "$LOG" 2>&1
+fi
+
 # Prune Docker (removes dangling images/containers)
 if pgrep -x "dockerd" > /dev/null; then
     /usr/bin/docker system prune -f >> "$LOG" 2>&1
