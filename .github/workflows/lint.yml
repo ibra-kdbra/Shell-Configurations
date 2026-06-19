@@ -1,0 +1,60 @@
+name: Shell Script Linting
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+
+permissions:
+  contents: write
+
+jobs:
+  lint:
+    name: Format and Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref || github.ref }}
+
+      - name: Install shfmt
+        run: |
+          SHFMT_VERSION="v3.8.0"
+          curl -sSLo shfmt "https://github.com/mvdan/sh/releases/download/${SHFMT_VERSION}/shfmt_${SHFMT_VERSION}_linux_amd64"
+          chmod +x shfmt
+          sudo mv shfmt /usr/local/bin/
+
+      - name: Run shfmt Auto-Format
+        run: |
+          echo "Scanning and formatting shell scripts..."
+          find . -type f -not -path '*/.*' | while read -r file; do
+            # Skip Zsh configuration files as shfmt does not support Zsh dialect
+            if [[ "$file" == *.zsh || "$file" == *zshrc || "$file" == *p10k.zsh ]]; then
+              continue
+            fi
+            
+            is_shell=false
+            if [[ "$file" == *.sh || "$file" == *.bash || "$file" == */dot_bashrc || "$file" == */executable_dot_bashrc || "$file" == */dot_bash_profile || "$file" == */dot_profile ]]; then
+              is_shell=true
+            elif head -n 1 "$file" 2>/dev/null | grep -qE '^#!\s*/(usr/)?bin/(env\s+)?(bash|sh|dash|ksh)'; then
+              is_shell=true
+            fi
+            
+            if [ "$is_shell" = true ]; then
+              echo "Formatting $file"
+              shfmt -w -i 4 -ci -sr "$file" || echo "Warning: Failed to format $file"
+            fi
+          done
+
+      - name: Commit Formatting Changes
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "style: auto-format shell scripts with shfmt"
+          file_pattern: '*'
+
+      - name: Run ShellCheck
+        uses: ludeeus/action-shellcheck@master
+        with:
+          scandir: './'
