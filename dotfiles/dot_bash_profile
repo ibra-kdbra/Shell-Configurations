@@ -1,0 +1,10 @@
+#
+# ~/.bash_profile
+#
+
+[[ -f ~/.bashrc ]] && . ~/.bashrc
+
+# Created by `pipx` on 2024-05-03 09:21:54
+export PATH="$PATH:/home/ibra/.local/bin"
+. "/home/ibra/.deno/env"
+if [ -e /home/ibra/.nix-profile/etc/profile.d/nix.sh ]; then . /home/ibra/.nix-profile/etc/profile.d/nix.sh; fi # added by Nix installer
