@@ -1,0 +1,2 @@
+#!/bin/sh
+feh --no-fehbg --bg-fill '/usr/share/dynamic-wallpaper/images/firewatch/11.png' 
