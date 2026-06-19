@@ -1,4 +1,5 @@
 #!/bin/bash
+set -euo pipefail
 # Script to clean up developer environment caches
 
 SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &> /dev/null && pwd)

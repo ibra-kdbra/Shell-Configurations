@@ -1,4 +1,5 @@
 #!/bin/bash
+set -euo pipefail
 # Backup to an external drive or a different partition
 
 SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &> /dev/null && pwd)

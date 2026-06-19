@@ -1,4 +1,5 @@
 #!/bin/bash
+set -euo pipefail
 # Script to update mirrors and clean package cache
 
 # Auto-detect script directory and set log path
