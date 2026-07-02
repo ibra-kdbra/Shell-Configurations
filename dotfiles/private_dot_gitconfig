@@ -1,7 +1,6 @@
 [user]
 	name = ibra-kdbra
 	email = git-repo-develop@outlook.com
-
 [credential]
 	helper = store
 [init]
